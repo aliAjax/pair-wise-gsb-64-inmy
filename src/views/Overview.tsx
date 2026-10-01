@@ -12,7 +12,9 @@ const statusColor = (status: BatchStatus) => status === '隔离中' || status ==
 export function Overview() {
   const dispatch = useDispatch<AppDispatch>()
   const state = useSelector((root: RootState) => root.haccp)
+  const recall = useSelector((root: RootState) => root.recall)
   const { isFetching } = useLoadBatchSnapshotQuery()
+  const frozenBatchIds = new Set(recall.productionBatches.filter((batch) => batch.releaseBlockedByCaseId !== null).map((batch) => batch.id))
   const rows = useMemo(() => state.batches.filter((batch) => {
     const text = `${batch.id} ${batch.product} ${batch.line}`.toLowerCase()
     return (!state.batchFilter || text.includes(state.batchFilter.toLowerCase())) && (state.batchStatus === '全部' || batch.status === state.batchStatus)
@@ -39,11 +41,13 @@ export function Overview() {
       <div className="split-layout">
         <div className="table-panel">
           <Table size="small" aria-label="生产批次">
-            <TableHeader><TableRow><TableHeaderCell>批次</TableHeaderCell><TableHeaderCell>产品</TableHeaderCell><TableHeaderCell>产线</TableHeaderCell><TableHeaderCell>状态</TableHeaderCell><TableHeaderCell>版本</TableHeaderCell></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHeaderCell>批次</TableHeaderCell><TableHeaderCell>产品</TableHeaderCell><TableHeaderCell>产线</TableHeaderCell><TableHeaderCell>状态</TableHeaderCell><TableHeaderCell>召回</TableHeaderCell><TableHeaderCell>版本</TableHeaderCell></TableRow></TableHeader>
             <TableBody>
               {rows.map((batch) => <TableRow key={batch.id} onClick={() => dispatch(setSelectedBatch(batch.id))} className={batch.id === selected?.id ? 'selected-row' : ''}>
                 <TableCell>{batch.id}</TableCell><TableCell>{batch.product}</TableCell><TableCell>{batch.line}</TableCell>
-                <TableCell><Badge appearance="tint" color={statusColor(batch.status)}>{batch.status}</Badge></TableCell><TableCell>V{batch.version}</TableCell>
+                <TableCell><Badge appearance="tint" color={statusColor(batch.status)}>{batch.status}</Badge></TableCell>
+                <TableCell>{frozenBatchIds.has(batch.id) ? <Badge appearance="tint" color="danger">召回冻结</Badge> : <span className="muted-cell">—</span>}</TableCell>
+                <TableCell>V{batch.version}</TableCell>
               </TableRow>)}
             </TableBody>
           </Table>
@@ -54,9 +58,10 @@ export function Overview() {
           <h3>监测点结果</h3>
           <div className="monitoring-list">{selected.monitoring.map((item) => <div key={`${selected.id}-${item.stepId}`}><span>{state.processSteps.find((step) => step.id === item.stepId)?.controlPoint}</span><strong>{item.value} {item.unit}</strong><small>{item.operator} · {item.recordedAt.slice(11, 16)}</small></div>)}</div>
           <div className="record-actions">
-            <Button appearance="secondary" disabled={selectedDeviations.some((item) => item.status !== '已关闭')} onClick={() => dispatch(updateBatchStatus({ id: selected.id, status: '可放行' }))}>提交放行复核</Button>
+            <Button appearance="secondary" disabled={selectedDeviations.some((item) => item.status !== '已关闭') || frozenBatchIds.has(selected.id)} onClick={() => dispatch(updateBatchStatus({ id: selected.id, status: '可放行' }))}>提交放行复核</Button>
             <Button appearance="primary" disabled={selected.status !== '可放行'} onClick={() => dispatch(updateBatchStatus({ id: selected.id, status: '已放行' }))}>签字放行</Button>
           </div>
+          {frozenBatchIds.has(selected.id) && <p className="validation-text">该批次被召回行动冻结放行（{recall.productionBatches.find((batch) => batch.id === selected.id)?.releaseBlockedByCaseId}），需召回处置完成后方可放行。</p>}
           {selectedDeviations.some((item) => item.status !== '已关闭') && <p className="validation-text">存在未关闭偏差，系统已阻止标记为可放行。</p>}
         </aside>}
       </div>
