@@ -19,6 +19,8 @@ export function Overview() {
   }), [state.batches, state.batchFilter, state.batchStatus])
   const selected = state.batches.find((item) => item.id === state.selectedBatchId) ?? rows[0]
   const selectedDeviations = state.deviations.filter((item) => item.batchId === selected?.id)
+  const selectedRecall = selected?.recallId ? state.recalls.find((item) => item.id === selected.recallId) : undefined
+  const recallFrozen = !!selectedRecall && selectedRecall.status !== '已完成'
 
   return (
     <section className="page">
@@ -49,15 +51,16 @@ export function Overview() {
           </Table>
         </div>
         {selected && <aside className="record-panel">
-          <div className="record-title"><div><span>{selected.id} · {selected.line}</span><h2>{selected.product}</h2></div><Badge color={statusColor(selected.status)}>{selected.status}</Badge></div>
-          <dl><div><dt>生产数量</dt><dd>{selected.quantity.toLocaleString()} 件</dd></div><div><dt>隔离范围</dt><dd>{selected.isolationScope}</dd></div><div><dt>关联偏差</dt><dd>{selectedDeviations.length} 项</dd></div></dl>
+          <div className="record-title"><div><span>{selected.id} · {selected.line}</span><h2>{selected.product}</h2></div><div className="badge-pair">{selectedRecall && <Badge appearance="tint" color="important">召回V{selectedRecall.version}</Badge>}<Badge color={statusColor(selected.status)}>{selected.status}</Badge></div></div>
+          <dl><div><dt>生产数量</dt><dd>{selected.quantity.toLocaleString()} 件</dd></div><div><dt>隔离范围</dt><dd>{selected.isolationScope}</dd></div><div><dt>原料批次</dt><dd>{selected.materialLotIds.join('、') || '待补链'}</dd></div><div><dt>关联偏差</dt><dd>{selectedDeviations.length} 项</dd></div>{selectedRecall && <div><dt>召回行动</dt><dd>{selectedRecall.id} · {selectedRecall.status}</dd></div>}</dl>
           <h3>监测点结果</h3>
           <div className="monitoring-list">{selected.monitoring.map((item) => <div key={`${selected.id}-${item.stepId}`}><span>{state.processSteps.find((step) => step.id === item.stepId)?.controlPoint}</span><strong>{item.value} {item.unit}</strong><small>{item.operator} · {item.recordedAt.slice(11, 16)}</small></div>)}</div>
           <div className="record-actions">
-            <Button appearance="secondary" disabled={selectedDeviations.some((item) => item.status !== '已关闭')} onClick={() => dispatch(updateBatchStatus({ id: selected.id, status: '可放行' }))}>提交放行复核</Button>
-            <Button appearance="primary" disabled={selected.status !== '可放行'} onClick={() => dispatch(updateBatchStatus({ id: selected.id, status: '已放行' }))}>签字放行</Button>
+            <Button appearance="secondary" disabled={recallFrozen || selectedDeviations.some((item) => item.status !== '已关闭')} onClick={() => dispatch(updateBatchStatus({ id: selected.id, status: '可放行' }))}>提交放行复核</Button>
+            <Button appearance="primary" disabled={recallFrozen || selected.status !== '可放行'} onClick={() => dispatch(updateBatchStatus({ id: selected.id, status: '已放行' }))}>签字放行</Button>
           </div>
-          {selectedDeviations.some((item) => item.status !== '已关闭') && <p className="validation-text">存在未关闭偏差，系统已阻止标记为可放行。</p>}
+          {recallFrozen && <p className="validation-text">批次处于召回冻结（{selectedRecall.id} · 召回V{selectedRecall.version}），召回完成前禁止放行。</p>}
+          {!recallFrozen && selectedDeviations.some((item) => item.status !== '已关闭') && <p className="validation-text">存在未关闭偏差，系统已阻止标记为可放行。</p>}
         </aside>}
       </div>
     </section>

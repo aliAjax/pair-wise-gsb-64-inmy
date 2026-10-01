@@ -14,6 +14,7 @@ export function DeviationWorkbench() {
   const [newDeviation, setNewDeviation] = useState({ batchId: state.batches[0]?.id ?? '', stepId: state.processSteps[0]?.id ?? '', title: '', severity: '一般' as const, owner: '质量工程组' })
   const rows = useMemo(() => state.deviations.filter((item) => status === '全部' || item.status === status), [state.deviations, status])
   const selected = state.deviations.find((item) => item.id === selectedId) ?? rows[0]
+  const recallVersionOf = (recallId: string | null) => state.recalls.find((item) => item.id === recallId)?.version
   const [investigation, setInvestigation] = useState<Investigation | null>(null)
   const activeInvestigation = investigation?.cause === selected?.investigation.cause ? investigation : selected?.investigation
 
@@ -23,10 +24,10 @@ export function DeviationWorkbench() {
       <div className="toolbar"><Dropdown value={status} selectedOptions={[status]} onOptionSelect={(_, data) => setStatus(data.optionValue as typeof status)}>{['全部', '待调查', '调查中', '待复核', '已关闭'].map((item) => <Option key={item} value={item}>{item}</Option>)}</Dropdown><span>调查完成前批次保持隔离，复核签字后才能恢复放行流程。</span></div>
       <div className="split-layout">
         <div className="deviation-list">{rows.map((item) => <button key={item.id} className={item.id === selected?.id ? 'active' : ''} onClick={() => { setSelectedId(item.id); setInvestigation(null) }}>
-          <div><Badge color={item.severity === '重大' ? 'danger' : 'warning'}>{item.severity}</Badge><small>{item.id}</small></div><strong>{item.title}</strong><span>{item.batchId} · {item.owner}</span><footer><Badge appearance="tint">{item.status}</Badge><span>{item.dueDate} 截止</span></footer>
+          <div><Badge color={item.severity === '重大' ? 'danger' : 'warning'}>{item.severity}</Badge><small>{item.id}</small></div><strong>{item.title}</strong><span>{item.batchId} · {item.owner}</span><footer><span className="badge-pair">{item.recallId && <Badge appearance="tint" color="important">召回V{recallVersionOf(item.recallId)}</Badge>}<Badge appearance="tint">{item.status}</Badge></span><span>{item.dueDate} 截止</span></footer>
         </button>)}</div>
         {selected && <div className="record-panel">
-          <div className="record-title"><div><span>{selected.id} · V{selected.version}</span><h2>{selected.title}</h2></div><Badge color={selected.severity === '重大' ? 'danger' : 'warning'}>{selected.status}</Badge></div>
+          <div className="record-title"><div><span>{selected.id} · V{selected.version}{selected.recallId ? ` · ${selected.recallId}` : ''}</span><h2>{selected.title}</h2></div><div className="badge-pair">{selected.recallId && <Badge appearance="tint" color="important">召回V{recallVersionOf(selected.recallId)}</Badge>}<Badge color={selected.severity === '重大' ? 'danger' : 'warning'}>{selected.status}</Badge></div></div>
           <Field label="原因判断"><Textarea value={activeInvestigation?.cause ?? ''} onChange={(_, data) => setInvestigation({ ...(activeInvestigation ?? selected.investigation), cause: data.value })} /></Field>
           <Field label="证据摘要"><Textarea value={activeInvestigation?.evidence ?? ''} onChange={(_, data) => setInvestigation({ ...(activeInvestigation ?? selected.investigation), evidence: data.value })} /></Field>
           <Field label="处置分支"><Dropdown value={activeInvestigation?.decision} selectedOptions={[activeInvestigation?.decision ?? '返工']} onOptionSelect={(_, data) => setInvestigation({ ...(activeInvestigation ?? selected.investigation), decision: data.optionValue as DecisionType })}>{['返工', '报废', '让步接收'].map((item) => <Option key={item} value={item} text={item}>{item}</Option>)}</Dropdown></Field>

@@ -57,3 +57,16 @@ dt { color: #778481; } dd { margin: 0; text-align: right; max-width: 220px; }
 .deviation-list button.active { border-color: #1d5755; box-shadow: inset 3px 0 #1d5755; }.deviation-list button > div, .deviation-list footer { display: flex; justify-content: space-between; align-items: center; }
 .deviation-list strong { font-size: 14px; }.deviation-list span, .deviation-list small, .deviation-list footer span { color: #788683; font-size: 11px; }
 .reset-button { position: fixed; right: 20px; bottom: 14px; }
+.head-actions { display: flex; gap: 8px; }
+.recall-layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 15px; align-items: start; }
+.panel-stack { display: grid; gap: 14px; }
+.panel-stack .record-panel h3:first-child { margin-top: 0; }
+.badge-pair { display: flex; gap: 6px; align-items: center; }
+.empty-panel { background: white; border: 1px dashed #c3cfca; border-radius: 4px; padding: 18px; color: #7d8987; font-size: 12px; line-height: 1.7; }
+.hint-text { color: #8a6d1d; background: #fbf5e5; border-left: 3px solid #c89c30; padding: 9px; font-size: 11px; line-height: 1.5; }
+.ok-text { color: #1f6e43; background: #ebf7ef; border-left: 3px solid #2f8f5b; padding: 9px; font-size: 11px; line-height: 1.5; }
+.inline-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 10px; align-items: end; margin-top: 8px; }
+.inline-form.confirm-form { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; }
+.confirm-list { display: grid; gap: 6px; margin-top: 14px; }
+.confirm-record { display: grid; grid-template-columns: auto 1fr 2fr; gap: 4px 10px; align-items: center; background: #f4f7f5; padding: 9px; font-size: 12px; }
+.confirm-record small { grid-column: 1 / -1; color: #899592; font-size: 10px; }
